@@ -1,3 +1,5 @@
+import type { ResPagination } from './common';
+
 export interface Patient {
   patient_id: string;
   name: string;
@@ -12,14 +14,7 @@ export interface Patient {
 
 export interface ResPatients {
   data: Patient[];
-  pagination: {
-    page: number;
-    limit: number;
-    total: number;
-    totalPages: number;
-    hasNext: boolean;
-    hasPrevious: boolean;
-  };
+  pagination: ResPagination;
   metadata: Record<string, unknown>;
 }
 

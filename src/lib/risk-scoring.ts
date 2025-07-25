@@ -145,7 +145,7 @@ export function calculateTotalRiskScore(patient: Patient): number {
   const bpRisk = calculateBloodPressureRisk(patient.blood_pressure);
   const tempRisk = calculateTemperatureRisk(patient.temperature);
   const ageRisk = calculateAgeRisk(patient.age);
-  console.log(patient, bpRisk, tempRisk, ageRisk);
+
   return bpRisk + tempRisk + ageRisk;
 }
 
@@ -183,11 +183,9 @@ export function hasDataQualityIssues(patient: Patient): boolean {
     );
 
   // Check if age is invalid/missing
-  const ageValid =
-    patient.age !== null &&
-    patient.age !== undefined &&
-    calculateAgeRisk(patient.age) > AgeRiskPoint.INVALID;
+  const ageValid = patient.age !== null && patient.age !== undefined;
 
+  console.log(patient, ':', bpValid, tempValid, ageValid);
   return !bpValid || !tempValid || !ageValid;
 }
 

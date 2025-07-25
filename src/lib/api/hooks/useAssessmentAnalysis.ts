@@ -55,13 +55,9 @@ export function useAssessmentAnalysis() {
     isLoading,
     error,
     isError,
-    // Pass through all the query metadata
     totalPages: queryResult.totalPages,
     expectedTotal: queryResult.expectedTotal,
     actualTotal: queryResult.actualTotal,
     isComplete: queryResult.isComplete,
-    successfulPages: queryResult.successfulPages,
-    isLoadingAdditionalPages: queryResult.isLoadingAdditionalPages,
-    completionPercentage: queryResult.completionPercentage,
   };
 }
