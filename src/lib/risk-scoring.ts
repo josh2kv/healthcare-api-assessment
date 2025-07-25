@@ -1,4 +1,4 @@
-import type { Patient } from '@/types/patients';
+import type { AlertLists, Patient } from '@/types/patients';
 import {
   BloodPressureRisk,
   BloodPressureThresholds,
@@ -138,6 +138,11 @@ export function calculateAgeRisk(age: number | string | null): number {
 
 // Calculate total risk score
 export function calculateTotalRiskScore(patient: Patient): number {
+  // Handle undefined/null patient
+  if (!patient) {
+    return 0;
+  }
+
   const bpRisk = calculateBloodPressureRisk(patient.blood_pressure);
   const tempRisk = calculateTemperatureRisk(patient.temperature);
   const ageRisk = calculateAgeRisk(patient.age);
@@ -187,19 +192,15 @@ export function hasDataQualityIssues(patient: Patient): boolean {
   return !bpValid || !tempValid || !ageValid;
 }
 
-// Generate all alert lists from patient data
-export interface AlertLists {
-  high_risk_patients: string[];
-  fever_patients: string[];
-  data_quality_issues: string[];
-}
-
 export function generateAlertLists(patients: Patient[]): AlertLists {
   const highRisk: string[] = [];
   const fever: string[] = [];
   const dataQuality: string[] = [];
 
-  for (const patient of patients) {
+  // Filter out undefined/null patients that might result from failed API requests
+  const validPatients = patients.filter(patient => patient != null);
+
+  for (const patient of validPatients) {
     const totalRisk = calculateTotalRiskScore(patient);
 
     // High-Risk Patients: total risk score ≥ 4
@@ -212,7 +213,7 @@ export function generateAlertLists(patients: Patient[]): AlertLists {
       fever.push(patient.patient_id);
     }
 
-    // Data Quality Issues: invalid/missing BP, Age, or Temp
+    // Data Quality Issues: missing or invalid critical data
     if (hasDataQualityIssues(patient)) {
       dataQuality.push(patient.patient_id);
     }

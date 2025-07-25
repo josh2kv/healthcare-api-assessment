@@ -17,6 +17,25 @@ function getErrorStatus(error: unknown): number | undefined {
   return undefined;
 }
 
+function getRetryAfter(error: unknown): number | undefined {
+  if (
+    error &&
+    typeof error === 'object' &&
+    'response' in error &&
+    error.response &&
+    typeof error.response === 'object' &&
+    'data' in error.response &&
+    error.response.data &&
+    typeof error.response.data === 'object' &&
+    'retry_after' in error.response.data &&
+    typeof (error.response.data as { retry_after: unknown }).retry_after ===
+      'number'
+  ) {
+    return (error.response.data as { retry_after: number }).retry_after;
+  }
+  return undefined;
+}
+
 export function QueryProvider({ children }: { children: ReactNode }) {
   const [queryClient] = useState(
     () =>
@@ -32,8 +51,21 @@ export function QueryProvider({ children }: { children: ReactNode }) {
               // Retry up to 3 times for network/server errors and rate limits
               return failureCount < 3;
             },
-            retryDelay: attemptIndex =>
-              Math.min(1000 * 2 ** attemptIndex, 30000),
+            retryDelay: (attemptIndex, error) => {
+              const status = getErrorStatus(error);
+
+              // For 429 rate limit errors, use server's retry_after if available
+              if (status === 429) {
+                const retryAfter = getRetryAfter(error);
+                if (retryAfter) {
+                  // Convert seconds to milliseconds and add small buffer
+                  return retryAfter * 1000 + 500;
+                }
+              }
+
+              // Default exponential backoff for other errors
+              return Math.min(1000 * 2 ** attemptIndex, 30000);
+            },
             staleTime: 1000 * 60 * 5, // 5 minutes
             gcTime: 1000 * 60 * 10, // 10 minutes (formerly cacheTime)
             refetchOnWindowFocus: false,
@@ -51,8 +83,21 @@ export function QueryProvider({ children }: { children: ReactNode }) {
               }
               return false;
             },
-            retryDelay: attemptIndex =>
-              Math.min(1000 * 2 ** attemptIndex, 10000),
+            retryDelay: (attemptIndex, error) => {
+              const status = getErrorStatus(error);
+
+              // For 429 rate limit errors, use server's retry_after if available
+              if (status === 429) {
+                const retryAfter = getRetryAfter(error);
+                if (retryAfter) {
+                  // Convert seconds to milliseconds and add small buffer
+                  return retryAfter * 1000 + 500;
+                }
+              }
+
+              // Default exponential backoff for other errors
+              return Math.min(1000 * 2 ** attemptIndex, 10000);
+            },
           },
         },
       }),

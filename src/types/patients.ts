@@ -22,3 +22,10 @@ export interface ResPatients {
   };
   metadata: Record<string, unknown>;
 }
+
+// Generate all alert lists from patient data
+export interface AlertLists {
+  high_risk_patients: string[];
+  fever_patients: string[];
+  data_quality_issues: string[];
+}
