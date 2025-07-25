@@ -1,16 +1,42 @@
-import { useState } from 'react';
 import './App.css';
-import { Button } from '@/components/ui/button';
+import { usePatientsQuery } from '@/lib/api/hooks/usePatientsQuery';
 
 function App() {
-  const [count, setCount] = useState(0);
+  const { data: patients, isLoading, error, isError } = usePatientsQuery();
+
+  // TODO: Add skeleton loader
+  if (isLoading) {
+    return <div>Loading patients...</div>;
+  }
+
+  if (isError) {
+    return (
+      <div>
+        <h2>Error loading patients:</h2>
+        <pre>{error?.message || 'Unknown error'}</pre>
+      </div>
+    );
+  }
 
   return (
-    <>
-      <Button onClick={() => setCount(count => count + 1)}>
-        count is {count}
-      </Button>
-    </>
+    <div>
+      <h1>Healthcare Assessment - Patient Data</h1>
+      <p>Total patients loaded: {patients?.length || 0}</p>
+
+      {patients && patients.length > 0 && (
+        <div>
+          <h2>First 5 patients:</h2>
+          <ul>
+            {patients.slice(0, 5).map(patient => (
+              <li key={patient.patient_id}>
+                {patient.name} - Age: {patient.age} - BP:{' '}
+                {patient.blood_pressure} - Temp: {patient.temperature}
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
+    </div>
   );
 }
 
