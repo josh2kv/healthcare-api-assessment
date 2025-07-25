@@ -11,44 +11,44 @@ import type { Patient } from '@/types/patients';
 
 describe('Blood Pressure Risk Scoring', () => {
   describe('Valid blood pressure values', () => {
-    test('Normal BP (Systolic <120 AND Diastolic <80) should return 1', () => {
-      expect(calculateBloodPressureRisk('110/70')).toBe(1);
-      expect(calculateBloodPressureRisk('119/79')).toBe(1);
+    test('Normal BP (Systolic <120 AND Diastolic <80) should return 0', () => {
+      expect(calculateBloodPressureRisk('110/70')).toBe(0);
+      expect(calculateBloodPressureRisk('119/79')).toBe(0);
     });
 
-    test('Elevated BP (Systolic 120-129 AND Diastolic <80) should return 2', () => {
-      expect(calculateBloodPressureRisk('120/70')).toBe(2);
-      expect(calculateBloodPressureRisk('125/75')).toBe(2);
-      expect(calculateBloodPressureRisk('129/79')).toBe(2);
+    test('Elevated BP (Systolic 120-129 AND Diastolic <80) should return 1', () => {
+      expect(calculateBloodPressureRisk('120/70')).toBe(1);
+      expect(calculateBloodPressureRisk('125/75')).toBe(1);
+      expect(calculateBloodPressureRisk('129/79')).toBe(1);
     });
 
-    test('Stage 1 BP (Systolic 130-139 OR Diastolic 80-89) should return 3', () => {
-      expect(calculateBloodPressureRisk('130/70')).toBe(3);
-      expect(calculateBloodPressureRisk('135/75')).toBe(3);
-      expect(calculateBloodPressureRisk('139/85')).toBe(3);
-      expect(calculateBloodPressureRisk('115/80')).toBe(3);
-      expect(calculateBloodPressureRisk('110/89')).toBe(3);
+    test('Stage 1 BP (Systolic 130-139 OR Diastolic 80-89) should return 2', () => {
+      expect(calculateBloodPressureRisk('130/70')).toBe(2);
+      expect(calculateBloodPressureRisk('135/75')).toBe(2);
+      expect(calculateBloodPressureRisk('139/85')).toBe(2);
+      expect(calculateBloodPressureRisk('115/80')).toBe(2);
+      expect(calculateBloodPressureRisk('110/89')).toBe(2);
     });
 
-    test('Stage 2 BP (Systolic ≥140 OR Diastolic ≥90) should return 4', () => {
-      expect(calculateBloodPressureRisk('140/70')).toBe(4);
-      expect(calculateBloodPressureRisk('150/85')).toBe(4);
-      expect(calculateBloodPressureRisk('120/90')).toBe(4);
-      expect(calculateBloodPressureRisk('160/95')).toBe(4);
+    test('Stage 2 BP (Systolic ≥140 OR Diastolic ≥90) should return 3', () => {
+      expect(calculateBloodPressureRisk('140/70')).toBe(3);
+      expect(calculateBloodPressureRisk('150/85')).toBe(3);
+      expect(calculateBloodPressureRisk('120/90')).toBe(3);
+      expect(calculateBloodPressureRisk('160/95')).toBe(3);
     });
 
     test('Should use higher risk stage when systolic/diastolic differ', () => {
-      expect(calculateBloodPressureRisk('140/75')).toBe(4); // Stage 2 systolic, normal diastolic
-      expect(calculateBloodPressureRisk('115/90')).toBe(4); // Normal systolic, Stage 2 diastolic
-      expect(calculateBloodPressureRisk('130/85')).toBe(3); // Both Stage 1
+      expect(calculateBloodPressureRisk('140/75')).toBe(3); // Stage 2 systolic, normal diastolic
+      expect(calculateBloodPressureRisk('115/90')).toBe(3); // Normal systolic, Stage 2 diastolic
+      expect(calculateBloodPressureRisk('130/85')).toBe(2); // Both Stage 1
     });
 
     test('Elevated category special case (120-129 AND <80)', () => {
-      expect(calculateBloodPressureRisk('120/79')).toBe(2);
-      expect(calculateBloodPressureRisk('125/75')).toBe(2);
-      expect(calculateBloodPressureRisk('129/79')).toBe(2);
+      expect(calculateBloodPressureRisk('120/79')).toBe(1);
+      expect(calculateBloodPressureRisk('125/75')).toBe(1);
+      expect(calculateBloodPressureRisk('129/79')).toBe(1);
       // Should not be elevated if diastolic >= 80
-      expect(calculateBloodPressureRisk('125/80')).toBe(3); // Stage 1 due to diastolic
+      expect(calculateBloodPressureRisk('125/80')).toBe(2); // Stage 1 due to diastolic
     });
   });
 
@@ -130,11 +130,11 @@ describe('Temperature Risk Scoring', () => {
 
 describe('Age Risk Scoring', () => {
   describe('Valid age values', () => {
-    test('Under 40 (<40 years) should return 1', () => {
-      expect(calculateAgeRisk(25)).toBe(1);
-      expect(calculateAgeRisk(39)).toBe(1);
-      expect(calculateAgeRisk('35')).toBe(1);
-      expect(calculateAgeRisk(1)).toBe(1);
+    test('Under 40 (<40 years) should return 0', () => {
+      expect(calculateAgeRisk(25)).toBe(0);
+      expect(calculateAgeRisk(39)).toBe(0);
+      expect(calculateAgeRisk('35')).toBe(0);
+      expect(calculateAgeRisk(1)).toBe(0);
     });
 
     test('40-65 (40-65 years, inclusive) should return 1', () => {
@@ -179,14 +179,14 @@ describe('Total Risk Score Calculation', () => {
       name: 'Test Patient',
       age: 70, // 2 points (over 65)
       gender: 'M',
-      blood_pressure: '150/95', // 4 points (Stage 2)
+      blood_pressure: '150/95', // 3 points (Stage 2)
       temperature: 101.5, // 2 points (high fever)
       visit_date: '2024-01-15',
       diagnosis: 'Test',
       medications: 'Test',
     };
 
-    expect(calculateTotalRiskScore(patient)).toBe(8); // 2 + 4 + 2 = 8
+    expect(calculateTotalRiskScore(patient)).toBe(7); // 2 + 3 + 2 = 7
   });
 
   test('Should handle mixed valid/invalid data', () => {
@@ -367,23 +367,23 @@ describe('Alert Lists Generation', () => {
       name: 'High Risk Patient',
       age: 70, // 2 points
       gender: 'M',
-      blood_pressure: '150/95', // 4 points (Stage 2)
+      blood_pressure: '150/95', // 3 points (Stage 2)
       temperature: 98.6, // 0 points
       visit_date: '2024-01-15',
       diagnosis: 'Test',
       medications: 'Test',
-    }, // Total: 6 points (≥4 = high risk)
+    }, // Total: 5 points (≥4 = high risk)
     {
       patient_id: 'FEVER_001',
       name: 'Fever Patient',
       age: 30, // 1 point
       gender: 'F',
-      blood_pressure: '130/85', // 3 points (Stage 1)
+      blood_pressure: '130/85', // 2 points (Stage 1)
       temperature: 101.0, // 2 points (high fever, ≥99.6)
       visit_date: '2024-01-15',
       diagnosis: 'Test',
       medications: 'Test',
-    }, // Total: 6 points (≥4 = high risk + fever)
+    }, // Total: 5 points (≥4 = high risk + fever)
     {
       patient_id: 'DATA_QUALITY_001',
       name: 'Data Quality Issues',
@@ -400,23 +400,23 @@ describe('Alert Lists Generation', () => {
       name: 'Normal Patient',
       age: 35, // 1 point
       gender: 'F',
-      blood_pressure: '115/75', // 1 point (Normal)
+      blood_pressure: '115/75', // 0 point (Normal)
       temperature: 98.6, // 0 points
       visit_date: '2024-01-15',
       diagnosis: 'Test',
       medications: 'Test',
-    }, // Total: 2 points (normal)
+    }, // Total: 1 points (normal)
     {
       patient_id: 'FEVER_ONLY_001',
       name: 'Fever Only Patient',
       age: 25, // 1 point
       gender: 'M',
-      blood_pressure: '110/70', // 1 point (Normal)
+      blood_pressure: '110/70', // 0 point (Normal)
       temperature: 99.6, // 1 point (low fever, ≥99.6)
       visit_date: '2024-01-15',
       diagnosis: 'Test',
       medications: 'Test',
-    }, // Total: 3 points (fever but not high risk)
+    }, // Total: 2 points (fever but not high risk)
   ];
 
   test('Should generate correct alert lists', () => {

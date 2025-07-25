@@ -1,7 +1,6 @@
 import type { Patient } from '@/types/patients';
 import { api } from './api';
 import type { ResWithPagination } from '@/types/common';
-import { delay } from '@/lib/utils/helpers';
 
 async function fetchPatientsPage(
   page = 1,
@@ -37,7 +36,7 @@ export async function fetchAllPatients(options?: {
     // Fetch pages sequentially with delay to avoid rate limiting
     otherPages = [];
     for (const page of remainingPages) {
-      await delay(delayMs);
+      await new Promise(resolve => setTimeout(resolve, delayMs));
       try {
         const pageData = await fetchPatientsPage(page, 20);
         otherPages.push(pageData);

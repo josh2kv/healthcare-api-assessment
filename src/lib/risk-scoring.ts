@@ -1,10 +1,10 @@
 import type { AlertLists, Patient } from '@/types/patients';
 import {
-  BloodPressureRisk,
+  BloodPressureRiskPoint,
   BloodPressureThresholds,
-  TemperatureRisk,
+  TemperatureRiskPoint,
   TemperatureThresholds,
-  AgeRisk,
+  AgeRiskPoint,
   AgeThresholds,
   HIGH_RISK_THRESHOLD,
 } from '@/types/enums';
@@ -14,20 +14,20 @@ export function calculateBloodPressureRisk(
   bloodPressure: string | null,
 ): number {
   if (!bloodPressure || typeof bloodPressure !== 'string') {
-    return BloodPressureRisk.INVALID;
+    return BloodPressureRiskPoint.INVALID;
   }
 
   // Check for invalid formats
   const bpParts = bloodPressure.split('/');
   if (bpParts.length !== 2) {
-    return BloodPressureRisk.INVALID;
+    return BloodPressureRiskPoint.INVALID;
   }
 
   const [systolicStr, diastolicStr] = bpParts;
 
   // Check for missing values (e.g., "150/" or "/90")
   if (!systolicStr.trim() || !diastolicStr.trim()) {
-    return BloodPressureRisk.INVALID;
+    return BloodPressureRiskPoint.INVALID;
   }
 
   const systolic = parseInt(systolicStr.trim(), 10);
@@ -35,53 +35,45 @@ export function calculateBloodPressureRisk(
 
   // Check for non-numeric values
   if (isNaN(systolic) || isNaN(diastolic)) {
-    return BloodPressureRisk.INVALID;
+    return BloodPressureRiskPoint.INVALID;
   }
 
-  // Determine risk based on higher of systolic or diastolic category
-  let systolicRisk = 0;
-  let diastolicRisk = 0;
-
-  // Systolic risk categories
-  if (systolic <= BloodPressureThresholds.SYSTOLIC.NORMAL_MAX) {
-    systolicRisk = BloodPressureRisk.NORMAL;
-  } else if (
-    systolic >= BloodPressureThresholds.SYSTOLIC.ELEVATED_MIN &&
-    systolic <= BloodPressureThresholds.SYSTOLIC.ELEVATED_MAX
+  // Stage 2 (Systolic ≥140 OR Diastolic ≥90): 3 points
+  if (
+    systolic >= BloodPressureThresholds.SYSTOLIC.STAGE_2_MIN ||
+    diastolic >= BloodPressureThresholds.DIASTOLIC.STAGE_2_MIN
   ) {
-    systolicRisk = BloodPressureRisk.ELEVATED;
-  } else if (
-    systolic >= BloodPressureThresholds.SYSTOLIC.STAGE_1_MIN &&
-    systolic <= BloodPressureThresholds.SYSTOLIC.STAGE_1_MAX
-  ) {
-    systolicRisk = BloodPressureRisk.STAGE_1;
-  } else if (systolic >= BloodPressureThresholds.SYSTOLIC.STAGE_2_MIN) {
-    systolicRisk = BloodPressureRisk.STAGE_2;
+    return BloodPressureRiskPoint.STAGE_2;
   }
 
-  // Diastolic risk categories
-  if (diastolic <= BloodPressureThresholds.DIASTOLIC.NORMAL_MAX) {
-    diastolicRisk = BloodPressureRisk.NORMAL;
-  } else if (
-    diastolic >= BloodPressureThresholds.DIASTOLIC.STAGE_1_MIN &&
-    diastolic <= BloodPressureThresholds.DIASTOLIC.STAGE_1_MAX
+  // Stage 1 (Systolic 130‑139 OR Diastolic 80‑89): 2 points
+  if (
+    (systolic >= BloodPressureThresholds.SYSTOLIC.STAGE_1_MIN &&
+      systolic <= BloodPressureThresholds.SYSTOLIC.STAGE_1_MAX) ||
+    (diastolic >= BloodPressureThresholds.DIASTOLIC.STAGE_1_MIN &&
+      diastolic <= BloodPressureThresholds.DIASTOLIC.STAGE_1_MAX)
   ) {
-    diastolicRisk = BloodPressureRisk.STAGE_1;
-  } else if (diastolic >= BloodPressureThresholds.DIASTOLIC.STAGE_2_MIN) {
-    diastolicRisk = BloodPressureRisk.STAGE_2;
+    return BloodPressureRiskPoint.STAGE_1;
   }
 
-  // Special case for Elevated: Systolic 120-129 AND Diastolic <80
+  // Elevated (Systolic 120‑129 AND Diastolic <80): 1 point
   if (
     systolic >= BloodPressureThresholds.SYSTOLIC.ELEVATED_MIN &&
     systolic <= BloodPressureThresholds.SYSTOLIC.ELEVATED_MAX &&
-    diastolic <= BloodPressureThresholds.DIASTOLIC.NORMAL_MAX
+    diastolic < BloodPressureThresholds.DIASTOLIC.STAGE_1_MIN
   ) {
-    return BloodPressureRisk.ELEVATED;
+    return BloodPressureRiskPoint.ELEVATED;
   }
 
-  // Return the higher risk stage (as per requirement)
-  return Math.max(systolicRisk, diastolicRisk);
+  // Normal (Systolic <120 AND Diastolic <80): 0 point
+  if (
+    systolic < BloodPressureThresholds.SYSTOLIC.ELEVATED_MIN &&
+    diastolic < BloodPressureThresholds.DIASTOLIC.STAGE_1_MIN
+  ) {
+    return BloodPressureRiskPoint.NORMAL;
+  }
+
+  return BloodPressureRiskPoint.INVALID;
 }
 
 // Temperature Risk Scoring
@@ -89,64 +81,71 @@ export function calculateTemperatureRisk(
   temperature: number | string | null,
 ): number {
   if (temperature === null || temperature === undefined) {
-    return TemperatureRisk.INVALID;
+    return TemperatureRiskPoint.INVALID;
   }
 
   const temp =
     typeof temperature === 'string' ? parseFloat(temperature) : temperature;
 
-  // Check for non-numeric values
   if (isNaN(temp)) {
-    return TemperatureRisk.INVALID;
+    return TemperatureRiskPoint.INVALID;
   }
 
-  if (temp <= TemperatureThresholds.NORMAL_MAX) return TemperatureRisk.NORMAL;
+  if (temp >= TemperatureThresholds.HIGH_FEVER_MIN) {
+    return TemperatureRiskPoint.HIGH_FEVER;
+  }
+
+  if (temp <= TemperatureThresholds.NORMAL_MAX) {
+    return TemperatureRiskPoint.NORMAL;
+  }
+
   if (
     temp >= TemperatureThresholds.FEVER_MIN &&
     temp <= TemperatureThresholds.LOW_FEVER_MAX
-  )
-    return TemperatureRisk.LOW_FEVER;
-  if (temp >= TemperatureThresholds.HIGH_FEVER_MIN)
-    return TemperatureRisk.HIGH_FEVER;
+  ) {
+    return TemperatureRiskPoint.LOW_FEVER;
+  }
 
-  return TemperatureRisk.INVALID;
+  return TemperatureRiskPoint.INVALID;
 }
 
 // Age Risk Scoring
 export function calculateAgeRisk(age: number | string | null): number {
   if (age === null || age === undefined) {
-    return AgeRisk.INVALID;
+    return AgeRiskPoint.INVALID;
   }
 
   const ageNum = typeof age === 'string' ? parseInt(age, 10) : age;
 
   // Check for non-numeric values
   if (isNaN(ageNum)) {
-    return AgeRisk.INVALID;
+    return AgeRiskPoint.INVALID;
   }
 
-  if (ageNum <= AgeThresholds.UNDER_40_MAX) return AgeRisk.UNDER_40;
+  if (ageNum > AgeThresholds.MIDDLE_AGE_MAX) {
+    return AgeRiskPoint.OVER_65;
+  }
+
+  if (ageNum < AgeThresholds.MIDDLE_AGE_MIN) {
+    return AgeRiskPoint.UNDER_40;
+  }
+
   if (
     ageNum >= AgeThresholds.MIDDLE_AGE_MIN &&
     ageNum <= AgeThresholds.MIDDLE_AGE_MAX
-  )
-    return AgeRisk.MIDDLE_AGE;
-  if (ageNum >= AgeThresholds.OVER_65_MIN) return AgeRisk.OVER_65;
+  ) {
+    return AgeRiskPoint.BETWEEN_40_65;
+  }
 
-  return AgeRisk.INVALID;
+  return AgeRiskPoint.INVALID;
 }
 
 // Calculate total risk score
 export function calculateTotalRiskScore(patient: Patient): number {
-  // Handle undefined/null patient
-  if (!patient) {
-    return 0;
-  }
-
   const bpRisk = calculateBloodPressureRisk(patient.blood_pressure);
   const tempRisk = calculateTemperatureRisk(patient.temperature);
   const ageRisk = calculateAgeRisk(patient.age);
-
+  console.log(patient, bpRisk, tempRisk, ageRisk);
   return bpRisk + tempRisk + ageRisk;
 }
 
@@ -171,7 +170,7 @@ export function hasDataQualityIssues(patient: Patient): boolean {
     patient.blood_pressure !== null &&
     patient.blood_pressure !== undefined &&
     calculateBloodPressureRisk(patient.blood_pressure) >
-      BloodPressureRisk.INVALID;
+      BloodPressureRiskPoint.INVALID;
 
   // Check if temperature is invalid/missing
   const tempValid =
@@ -187,7 +186,7 @@ export function hasDataQualityIssues(patient: Patient): boolean {
   const ageValid =
     patient.age !== null &&
     patient.age !== undefined &&
-    calculateAgeRisk(patient.age) > AgeRisk.INVALID;
+    calculateAgeRisk(patient.age) > AgeRiskPoint.INVALID;
 
   return !bpValid || !tempValid || !ageValid;
 }

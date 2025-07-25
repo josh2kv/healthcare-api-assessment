@@ -3,19 +3,6 @@ export function delay(ms: number): Promise<void> {
   return new Promise(resolve => setTimeout(resolve, ms));
 }
 
-// Helper function to safely get nested object properties
-export function getNestedProperty<T>(
-  obj: unknown,
-  path: string[],
-): T | undefined {
-  return path.reduce((current: unknown, key: string) => {
-    if (current && typeof current === 'object' && key in current) {
-      return (current as Record<string, unknown>)[key];
-    }
-    return undefined;
-  }, obj) as T | undefined;
-}
-
 // Helper function to get error status from unknown error type
 export function getErrorStatus(error: unknown): number | undefined {
   if (

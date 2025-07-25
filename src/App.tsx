@@ -1,5 +1,6 @@
 import './App.css';
 import { useAssessmentAnalysis } from '@/lib/api/hooks/useAssessmentAnalysis';
+import { useSubmitAssessment } from '@/lib/api/hooks/useSubmitAssessment';
 
 function App() {
   const {
@@ -15,6 +16,18 @@ function App() {
     isLoadingAdditionalPages,
     completionPercentage,
   } = useAssessmentAnalysis();
+
+  const submitMutation = useSubmitAssessment();
+
+  const handleSubmit = () => {
+    if (analysis) {
+      submitMutation.mutate({
+        high_risk_patients: analysis.high_risk_patients,
+        fever_patients: analysis.fever_patients,
+        data_quality_issues: analysis.data_quality_issues,
+      });
+    }
+  };
 
   if (isLoading) {
     return (
@@ -104,6 +117,76 @@ function App() {
         <h1 className="text-3xl font-bold text-gray-900 mb-8">
           Healthcare Risk Assessment Dashboard
         </h1>
+
+        {/* Submission Result */}
+        {submitMutation.data && (
+          <div className="bg-blue-50 border border-blue-200 p-6 rounded-lg mb-6">
+            <h2 className="text-xl font-bold text-blue-900 mb-4">
+              📊 Assessment Submission Results
+            </h2>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+              <div className="text-center">
+                <div className="text-2xl font-bold text-blue-600">
+                  {submitMutation.data.results.score}
+                </div>
+                <div className="text-sm text-gray-600">Final Score</div>
+              </div>
+              <div className="text-center">
+                <div className="text-2xl font-bold text-green-600">
+                  {submitMutation.data.results.percentage}%
+                </div>
+                <div className="text-sm text-gray-600">Percentage</div>
+              </div>
+              <div className="text-center">
+                <div
+                  className={`text-2xl font-bold ${
+                    submitMutation.data.results.status === 'PASS'
+                      ? 'text-green-600'
+                      : 'text-red-600'
+                  }`}
+                >
+                  {submitMutation.data.results.status}
+                </div>
+                <div className="text-sm text-gray-600">Status</div>
+              </div>
+            </div>
+
+            {/* Feedback */}
+            <div className="space-y-2">
+              {submitMutation.data.results.feedback.strengths.map(
+                (strength, idx) => (
+                  <div key={idx} className="text-green-700 text-sm">
+                    {strength}
+                  </div>
+                ),
+              )}
+              {submitMutation.data.results.feedback.issues.map((issue, idx) => (
+                <div key={idx} className="text-orange-700 text-sm">
+                  {issue}
+                </div>
+              ))}
+            </div>
+
+            <div className="mt-4 text-sm text-gray-600">
+              Attempt {submitMutation.data.results.attempt_number} of 3 •
+              {submitMutation.data.results.remaining_attempts} attempts
+              remaining
+            </div>
+          </div>
+        )}
+
+        {/* Submission Error */}
+        {submitMutation.isError && (
+          <div className="bg-red-50 border border-red-200 p-4 rounded-lg mb-6">
+            <h3 className="text-red-800 font-semibold mb-2">
+              Submission Failed
+            </h3>
+            <p className="text-red-700 text-sm">
+              {(submitMutation.error as Error)?.message ||
+                'Unknown error occurred'}
+            </p>
+          </div>
+        )}
 
         {/* Data Collection Progress */}
         {!isComplete && (
@@ -260,7 +343,7 @@ function App() {
           </div>
         </div>
 
-        {/* Submission Ready Indicator */}
+        {/* Submission Section */}
         <div
           className={`border p-6 rounded-lg ${
             isComplete
@@ -286,6 +369,29 @@ function App() {
               ? `All ${actualTotal} patients analyzed and ready for submission to the assessment API.`
               : `Collecting patient data... ${actualTotal}/${expectedTotal} patients analyzed so far.`}
           </p>
+
+          {/* Submit Button */}
+          {isComplete && (
+            <div className="mb-4">
+              <button
+                onClick={handleSubmit}
+                disabled={submitMutation.isPending}
+                className={`px-6 py-3 rounded-lg font-semibold text-white transition-colors ${
+                  submitMutation.isPending
+                    ? 'bg-gray-400 cursor-not-allowed'
+                    : 'bg-blue-600 hover:bg-blue-700'
+                }`}
+              >
+                {submitMutation.isPending
+                  ? 'Submitting...'
+                  : 'Submit Assessment'}
+              </button>
+              <p className="text-sm text-gray-600 mt-2">
+                ⚠️ You have 3 submission attempts. Use them wisely!
+              </p>
+            </div>
+          )}
+
           <div
             className={`text-sm font-mono p-3 rounded ${
               isComplete
