@@ -1,8 +1,8 @@
 import './App.css';
-import { usePatientsQuery } from '@/lib/api/hooks/usePatientsQuery';
+import { useAllPatientsQuery } from '@/lib/api/hooks/useAllPatientsQuery';
 
 function App() {
-  const { data: patients, isLoading, error, isError } = usePatientsQuery();
+  const { data: patients, isLoading, error, isError } = useAllPatientsQuery();
 
   // TODO: Add skeleton loader
   if (isLoading) {
