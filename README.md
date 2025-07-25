@@ -5,6 +5,7 @@
 
 ### 1. API Integration
 
+- [ ] Fetch all patients from the API using Promise.all
 - [ ] Add retry logic for 500/503 errors (~8% failure rate)
 - [ ] Handle rate limiting (429 errors)
 - [ ] Implement pagination to fetch all patients (5 per page, ~10 pages)
